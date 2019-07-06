@@ -1,0 +1,6 @@
+{
+	"mqtt_broker" : "tcp://mqtt-data-vrf.machinesense.com:8883",
+	"max_time_out":5000,
+	"interval" : 60000,
+	"mac" : "b8:27:eb:20:07:9a"
+}
