@@ -2,19 +2,23 @@ var speedTest = require('speedtest-net');
 var mqtt = require('mqtt');
 var config = require('./speedTest_config.json');
 var client  = mqtt.connect(config.mqtt_broker);
+var exec = require('child_process').execSync;
+
+var mac = exec('cat /sys/class/net/eth0/address').toString().substring(0,17);
+
 console.dir(config);
 client.on('connect',function(){
 	console.log("Successfully connceted to " + config.mqtt_broker);
 	try{
 		setInterval(function(){
-			var test = speedTest({maxTime: (config.max_time_out || 5000)}); 
+			var test = speedTest({maxTime: (config.max_time_out || config.interval)}); 
 			test.on('data',function(data){
 				//console.dir(data);
 				try{
-					client.publish("info/heartbeat/"+config.mac+"/net_dwnld", data.speeds.download.toString());
-					console.log("Publishing "+"info/heartbeat/"+config.mac+"/net_dwnld  => "+ data.speeds.download.toString());
-					client.publish("info/heartbeat/"+config.mac+"/net_upld", data.speeds.upload.toString());
-					console.log("Publishing "+"info/heartbeat/"+config.mac+"/net_upld  => "+ data.speeds.upload.toString());
+					client.publish("info/heartbeat/"+mac+"/net_dwnld", data.speeds.download.toString());
+					console.log("Publishing "+"info/heartbeat/"+mac+"/net_dwnld  => "+ data.speeds.download.toString());
+					client.publish("info/heartbeat/"+mac+"/net_upld", data.speeds.upload.toString());
+					console.log("Publishing "+"info/heartbeat/"+mac+"/net_upld  => "+ data.speeds.upload.toString());
 				}
 				catch(exception){
 					console.error("Error while publishing data " + exception);
@@ -24,9 +28,11 @@ client.on('connect',function(){
 
 			test.on('error', function(err) {
 				console.error("Error while connecting to speedtest.net");
+				client.publish("info/heartbeat/"+config.mac+"/net_dwnld", "0");
+				client.publish("info/heartbeat/"+config.mac+"/net_upld", "0");
 			 	console.error(err);
 			});
-		},(config.interval || 60000));
+		},(config.interval || config.max_time_out));
 	}
 	catch(exception){
 		 console.log("something went wrong !", exception);
